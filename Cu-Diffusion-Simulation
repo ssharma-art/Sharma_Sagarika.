@@ -1,0 +1,15 @@
+
+nx, ny = 40, 40
+steps = 100
+Cu = 0.6 + 0.02 * (np.random.rand(nx, ny) - 0.5)
+
+for t in range(steps):
+    Cu = Cu + 0.15 * (
+        np.roll(Cu, 1, 0) + np.roll(Cu, -1, 0) +
+        np.roll(Cu, 1, 1) + np.roll(Cu, -1, 1) - 4*Cu
+    )
+
+plt.imshow(Cu, cmap='plasma')
+plt.title("Simple Cu Diffusion Test")
+plt.colorbar(label="Cu concentration")
+plt.show()
