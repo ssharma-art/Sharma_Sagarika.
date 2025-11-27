@@ -1,0 +1,35 @@
+import numpy as np
+import os
+
+# --- Define the location of the pre-existing data (from the previous simulation) ---
+input_file = "segregation_step2_outputs/step2_z5.npz"
+
+# --- Define the output filename ---
+output_file = "step2_data_z5.npz"
+
+# --- Load the required arrays ---
+try:
+    data = np.load(input_file)
+    C0 = data["C0"]
+    C_final = data["C_final"]
+    stds = data["stds"]
+    times = data["times"]
+    Z = data["Z"]
+
+    # --- Save the arrays into a new compressed NPZ file ---
+    # np.savez_compressed is preferred for smaller file size
+    np.savez_compressed(output_file,
+                        C0=C0,
+                        C_final=C_final,
+                        Z=Z,
+                        stds=stds,
+                        times=times)
+
+    print(f"✅ Successfully created the file: {output_file}")
+    print(f"The file contains the following arrays: 'C0', 'C_final', 'Z', 'stds', 'times'.")
+
+except FileNotFoundError:
+    print(f"❌ Error: The required input file '{input_file}' was not found.")
+    print("Please ensure the initial simulation script was run successfully to create the data.")
+except Exception as e:
+    print(f"An error occurred: {e}")
