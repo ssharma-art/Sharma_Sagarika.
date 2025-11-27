@@ -1,0 +1,67 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+
+# --- Parameters used to name the file ---
+zn_fraction_key = 0.10
+run_index = 0
+
+# Construct the expected file name based on the previous simulation's saving logic
+# e.g., "results_z10_run0.npz"
+filename = f"results_z{int(zn_fraction_key*100)}_run{run_index}.npz"
+
+print(f"Attempting to load file: {filename}")
+
+try:
+    # 1. Load the compressed numpy archive
+    data = np.load(filename)
+    print("--- File Loaded Successfully ---")
+
+    # 2. Inspect the contents (list of arrays saved inside the .npz file)
+    print("Arrays contained in the file:")
+    for key in data.files:
+        if key not in ['C_final', 'C0', 'Z']: # Skip large arrays for initial inspection
+            print(f"- {key}: shape {data[key].shape}")
+        else:
+             print(f"- {key}: shape {data[key].shape}, Type: Spatial Field")
+
+    # 3. Extract key arrays for analysis
+    C0 = data['C0']          # Initial Concentration Field
+    C_final = data['C_final'] # Final Concentration Field
+    times = data['times']    # Time points
+    stds = data['stds']      # Standard Deviation over time
+
+    # 4. Print Summary Metrics
+    print("\n--- Summary Statistics ---")
+    print(f"Initial Std(C): {C0.std():.4f}")
+    print(f"Final Std(C): {C_final.std():.4f}")
+    if 'morans' in data.files and data['morans'].size > 0:
+        print(f"Final Moran's I (Spatial Autocorrelation): {data['morans'][-1]:.4f}")
+
+    # 5. Plot the Std(C) vs Time curve
+    plt.figure(figsize=(7, 4))
+    plt.plot(times, stds, label=f"Zn {zn_fraction_key*100:.0f}%")
+    plt.xlabel("Time (arb. units)")
+    plt.ylabel("Std(C)")
+    plt.title(f"Homogenization Curve from {filename}")
+    plt.legend()
+    plt.grid(True, linestyle=':', alpha=0.6)
+    plt.tight_layout()
+    plt.show()
+
+    # 6. Plot the Initial and Final Concentration Fields
+    fig, axes = plt.subplots(1, 2, figsize=(8, 4))
+    axes[0].imshow(C0, origin='lower', vmin=0, vmax=1)
+    axes[0].set_title("Initial Concentration (C0)")
+    axes[1].imshow(C_final, origin='lower', vmin=0, vmax=1)
+    axes[1].set_title("Final Concentration")
+    for ax in axes:
+        ax.axis('off')
+    plt.tight_layout()
+    plt.show()
+
+except FileNotFoundError:
+    print(f"\nERROR: The file '{filename}' was not found.")
+    print("Please ensure you have run the simulation script and that the file is in the current directory.")
+except Exception as e:
+    print(f"\nAn error occurred while reading the file: {e}")
