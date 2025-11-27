@@ -1,0 +1,32 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Step 1: Initialize grid with Cu concentration and Zn mask
+
+# Reproducibility
+np.random.seed(0)
+
+# Grid size
+grid_size = 50
+
+# Initial Cu concentration (random around 0.5)
+C = 0.5 + 0.1 * np.random.randn(grid_size, grid_size)
+C = np.clip(C, 0, 1)  # ensure values stay between 0 and 1
+
+# Zn substitution mask (5%)
+Zn_fraction = 0.05
+Z = (np.random.rand(grid_size, grid_size) < Zn_fraction).astype(int)
+
+# Plot initial Cu distribution and Zn mask
+fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+
+im1 = axes[0].imshow(C, cmap='viridis')
+axes[0].set_title("Initial Cu Concentration")
+plt.colorbar(im1, ax=axes[0])
+
+im2 = axes[1].imshow(Z, cmap='viridis')
+axes[1].set_title("Zn Mask (5%)")
+plt.colorbar(im2, ax=axes[1])
+
+plt.tight_layout()
+plt.show()
