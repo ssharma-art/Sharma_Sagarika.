@@ -1,9 +1,8 @@
-# Sharma_Sagarika.
-Development of Stable Cu-Based Argyrodites for Highly Efficient Energy Conversions
+
 # Development of Stable Cu-Based Argyrodites for Highly Efficient Energy Conversions
 
 **Researcher:** Sagarika Sharma  
-**Project No.:** 10  
+**Project No.:** 10 
 **Programming Method Used:** Python  
 
 ---
@@ -12,9 +11,10 @@ Development of Stable Cu-Based Argyrodites for Highly Efficient Energy Conversio
 
 ## 1. Background and Key Concepts
 
-### 1.1 Overview
-
-This report summarizes the current progress on developing a toy-model simulation to study Cu segregation and the stabilizing influence of Zn substitution in Cu-based argyrodites (Cu₆PS₅X). It covers milestones completed, the first step executed, challenges encountered, and next planned actions.
+### 1.1 Cu-based Argyrodites
+- Argyrodites are crystalline materials with general formula **Cu₆PS₅X** (X = Cl, Br, I).  
+- They exhibit **superionic conduction**, meaning Cu⁺ ions are highly mobile within the lattice.  
+- Applications include **thermoelectrics** and **solid-state ionic conductors**.
 
 ### 1.2 Problem: Cu Segregation
 - During annealing (heat treatment), mobile Cu ions can **cluster**, leading to inhomogeneous regions.  
@@ -36,142 +36,85 @@ This report summarizes the current progress on developing a toy-model simulation
 
 ---
 
-## 2. . Milestones Achieved
-Milestone 0 – Setup
+## 2. Computational Model (Simple 2D Toy Model)
 
-Status: Completed
+**Goal:** Demonstrate the effect of Zn on Cu segregation visually and quantitatively.
 
-0.1 Python Environment Installed
+### 2.1 Model Setup
+- 2D grid (e.g., 50×50 cells) represents material microstructure  
+- Each cell contains:
+  - \(C_{i,j}\): local Cu fraction (0–1)  
+  - \(Z_{i,j}\): Zn presence (0 or 1)  
 
-Python successfully installed (v3.x).
-
-Required libraries (numpy, matplotlib) verifie.
-
-### 2.1 Set reproducible randomness
-
-np.random.seed(0) so results can be reproduced exactly.
-
-
-import numpy as np
-import matplotlib.pyplot as plt
-
-# Step 1: Initialize grid with Cu concentration and Zn mask
-
-# Reproducibility
-np.random.seed(0)
-
-### 2.2 Defined parameters
-
-Grid size: 50×50 (2,500 cells).
-
-Baseline Cu fraction base_C = 0.5.
-
-Initial noise sigma_C = 0.10 (so each cell is 0.5 ± 0.1 sampled from a normal distribution).
-
-Zn substitution target fraction: Zn_fraction = 0.05 (5% of cells chosen at random to contain Zn).
-
-# Grid size
-grid_size = 50
-
-# Initial Cu concentration (random around 0.5)
-C = 0.5 + 0.1 * np.random.randn(grid_size, grid_size)
-C = np.clip(C, 0, 1)  # ensure values stay between 0 and 1
-
-# Zn substitution mask (5%)
-Zn_fraction = 0.05
-Z = (np.random.rand(grid_size, grid_size) < Zn_fraction).astype(int)
-
-### 2.3  Initialized Cu concentration field
-
-C = base_C + sigma_C * np.random.randn(grid_size, grid_size) and clipped to [0,1].
-
-### 2.4 Created Zn mask
-
-Binary mask Z where each cell independently has probability 0.05 to be Zn.
-
-Counted actual Zn sites and computed the actual fraction (since sampling gives an empirical fraction close to target).
-
-# Plot initial Cu distribution and Zn mask
-fig, axes = plt.subplots(1, 2, figsize=(10, 5))
-
-im1 = axes[0].imshow(C, cmap='viridis')
-axes[0].set_title("Initial Cu Concentration")
-plt.colorbar(im1, ax=axes[0])
-
-im2 = axes[1].imshow(Z, cmap='viridis')
-axes[1].set_title("Zn Mask (5%)")
-plt.colorbar(im2, ax=axes[1])
-
-plt.tight_layout()
-plt.show()
-
-## 3. Numeric results from this run
-
-Grid size: 50 × 50 (2,500 cells)
-
-Cu concentration:
-
-Mean = 0.4981
-
-Std = 0.0976
-
-Min = 0.1883
-
-Max = 0.8171
-
-Zn mask:
-
-Target fraction = 5.00%
-
-Actual Zn count = 134 cells
-
-Actual fraction = 5.36%
-
-The actual Zn fraction is close to the target because of random sampling.
-
-## 3.1 Saved outputs
-
-Saved arrays C and Z to /mnt/data/segregation_step1_outputs/step1_arrays.npz.
-
-Saved visualization PNG to /mnt/data/segregation_step1_outputs/step1_visuals.png.
-
-## 3.2 Plotted results
-
-Left: heatmap of initial Cu concentration (C).
-
-Middle: Zn mask (binary).
-
-Right: histogram of Cu fraction values across the grid.
-
-## Files I saved
-
-
- 
- 
-
-
-
-
-
-
-
+### 2.2 Update Rule
+- **Diffusion-like smoothing** of Cu:
+  \[
+  C^{t+1}_{i,j} = C^t_{i,j} + D_{i,j} \cdot (\text{Laplacian of } C)
+  \]
+- Local diffusion coefficient:
+  \[
+  D_{i,j} =
+    \begin{cases}
+      D_0 & \text{if no Zn} \\
+      D_0 \cdot 0.25 & \text{if Zn present}
+    \end{cases}
+  \]
 
 ---
 
-## 5. Interpretation
+## 3. Work Plan with Milestones and Fine-Grained Tasks
 
-The Cu field is roughly centered at 0.5 with spread ≈ 0.1, as intended. The histogram confirms a near-Gaussian distribution clipped to [0,1].
+| Milestone | Task | Description | Estimated Time |
+|-----------|------|-------------|----------------|
+| **0: Setup** | 0.1 | Install Python and libraries (`numpy`, `matplotlib`) | 20–30 min |
+|  | 0.2 | Create project folder and save script | 5–10 min |
+| **1: Literature Review & Parameter Selection** | 1.1 | Read key papers on Cu segregation and Zn substitution | 4–6 hours |
+|  | 1.2 | Decide grid size, diffusion coefficient, Zn fraction | 1–2 hours |
+|  | 1.3 | Document assumptions and parameter table | 1 hour |
+| **2: Model Design** | 2.1 | Write pseudocode for diffusion update and metrics | 2–3 hours |
+|  | 2.2 | Decide outputs: plots, CSV files, snapshots | 1 hour |
+| **3: Python Prototype Implementation** | 3.1 | Implement diffusion update and Zn mask | 3–5 hours |
+|  | 3.2 | Add metrics calculation (std, optional CV) | 2–3 hours |
+|  | 3.3 | Implement simulation loop and collect results | 2–3 hours |
+|  | 3.4 | Generate plots (time series and maps) | 2 hours |
+| **4: Testing and Experiments** | 4.1 | Run simulation with varying Zn fractions (0, 0.05, 0.1) | 30–60 min |
+|  | 4.2 | Inspect and validate plots | 20–30 min |
+| **5: Reporting Results** | 5.1 | Screenshot figures and add captions | 20–30 min |
+|  | 5.2 | Write short report paragraph explaining results | 20–30 min |
+| **6: Optional Extensions** | 6.1 | Multi-run statistics and confidence intervals | 2–3 hours |
+|  | 6.2 | Cluster size or spatial autocorrelation analysis | 2–3 hours |
 
-Zn sites are sparse (~5%) and appear randomly scattered — this mimics a dilute substitution strategy in the toy model.
+**Total estimated time:** ~2–3 hours for basic prototype; ~1–2 days if including optional statistics/plots
 
 ---
 
-## 6. Suggested immediate next steps
+## 4. Schedule Proposal
 
-Implement the diffusion update (the Laplacian-based smoothing) with spatially varying diffusion coefficient:
+**Day 1 (2–3 hours)**  
+- Install Python, save script  
+- Run prototype simulation  
+- Generate std(Cu) plot and Cu maps  
 
-D_ij = D0 if no Zn, D0 * 0.25 if Zn present.
+**Day 2 (1–2 hours)**  
+- Test different Zn fractions  
+- Screenshot figures  
+- Write short report paragraph  
 
-Use a standard 5-point Laplacian finite difference: L(C)[i,j] = C[i+1,j] + C[i-1,j] + C[i,j+1] + C[i,j-1] - 4*C[i,j].
+**Optional Day 3**  
+- Run multiple simulations for statistics  
+- Compute confidence intervals and cluster analysis  
+- Polish figures for report or presentation  
 
-Choose D0 and a time-step dt such that the update C += D_ij * dt * Laplacian is stable (or use small dt).
+---
+
+## 5. Expected Results
+
+- **Time series plot:** std(Cu) decreases faster with Zn → reduced segregation  
+- **Cu maps:** more uniform Cu distribution in Zn-substituted grid  
+- Supports the hypothesis that **Zn stabilizes Cu distribution during annealing**  
+
+---
+
+## 6. Sample Report Paragraph
+
+> We simulated Cu redistribution on a 2D lattice during annealing, comparing two cases: no Zn and 5% Zn substitution. The standard deviation of Cu concentration decreased faster in the Zn-substituted lattice, indicating lower segregation. Visual inspection of concentration maps confirmed that Zn reduced clustering, producing a more uniform distribution. This simple model demonstrates that Zn reduces Cu mobility and stabilizes the microstructure, explaining improved reproducibility of transport properties in Zn-doped argyrodites.
