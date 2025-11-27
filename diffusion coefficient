@@ -1,0 +1,135 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+
+# -------------------------
+# PARAMETERS (tweakable)
+# -------------------------
+np.random.seed(0)          # reproducible
+grid_size = 50             # 50x50 grid
+base_C = 0.5
+sigma_C = 0.10
+
+D0 = 0.2                   # base diffusion coefficient (arbitrary units)
+Zn_factor = 0.25           # D is multiplied by this where Zn is present
+dt = 0.2                   # time step (arb. units)
+nsteps = 300               # number of time steps
+save_every = 50            # save snapshot every N steps
+
+out_dir = "segregation_step2_outputs"
+os.makedirs(out_dir, exist_ok=True)
+
+# Zn fractions to compare
+Zn_fractions = [0.0, 0.05, 0.10]
+
+# -------------------------
+# Initialize same C0 for all runs
+# -------------------------
+C0 = base_C + sigma_C * np.random.randn(grid_size, grid_size)
+C0 = np.clip(C0, 0.0, 1.0)
+
+def laplacian_periodic(A):
+    # 5-point Laplacian with periodic boundary conditions using np.roll
+    return (np.roll(A, 1, axis=0) + np.roll(A, -1, axis=0) +
+            np.roll(A, 1, axis=1) + np.roll(A, -1, axis=1) - 4*A)
+
+results = {}
+
+for zf in Zn_fractions:
+    # create Zn mask (random sampling)
+    # NOTE: The random sampling needs to be controlled for reproducibility if we
+    # want the Zn locations to be exactly the same as in the original run, but
+    # for simulation logic, having it inside the loop is correct as it generates
+    # a *new* random Z for each fraction. We will stick to the provided code logic.
+    Z = (np.random.rand(grid_size, grid_size) < zf).astype(int)
+    D = D0 * np.ones_like(C0)
+    D[Z == 1] = D0 * Zn_factor
+
+    C = C0.copy()
+    stds = []
+    times = []
+    snapshots = {0: C.copy()}
+
+    for step in range(1, nsteps + 1):
+        L = laplacian_periodic(C)
+        C = C + dt * D * L        # explicit update
+        C = np.clip(C, 0.0, 1.0)  # keep physical range
+
+        stds.append(C.std(ddof=0))
+        times.append(step * dt)
+
+        if step % save_every == 0:
+            snapshots[step] = C.copy()
+
+    results[zf] = {
+        "C_final": C.copy(),
+        "stds": np.array(stds),
+        "times": np.array(times),
+        "Z": Z,
+        "snapshots": snapshots
+    }
+
+    # save arrays for this run
+    fname = os.path.join(out_dir, f"step2_z{int(zf*100)}.npz")
+    np.savez_compressed(fname,
+                        C0=C0, C_final=C, Z=Z, stds=np.array(stds), times=np.array(times))
+    print("Saved:", fname)
+
+# -------------------------
+# Plot std vs time (all on one figure) - Recreating original logic
+# -------------------------
+plt.figure(figsize=(7,4))
+for zf in Zn_fractions:
+    entry = results[zf]
+    # Use LaTeX for standard deviation symbol for better formatting
+    plt.plot(entry["times"], entry["stds"], label=f"Zn {zf*100:.0f}\%")
+plt.xlabel("Time (arb. units)")
+plt.ylabel(r"Std($C$)") # Use LaTeX for C
+plt.title(r"Std($C$) vs Time for different Zn fractions")
+plt.legend()
+plt.grid(True, linestyle=':', alpha=0.6)
+plt.tight_layout()
+stdplot_path = os.path.join(out_dir, "std_vs_time.png")
+plt.savefig(stdplot_path, dpi=200)
+plt.close()
+print("Saved:", stdplot_path)
+
+# -------------------------
+# Save initial + final snapshots for each Zn fraction - Recreating original logic
+# -------------------------
+for zf in Zn_fractions:
+    entry = results[zf]
+    init_C = entry["snapshots"][0]
+    final_C = entry["C_final"]
+
+    # Initial C
+    init_path = os.path.join(out_dir, f"init_C_z{int(zf*100)}.png")
+    plt.figure(figsize=(4,4))
+    plt.imshow(init_C, origin='lower', vmin=0.0, vmax=1.0)
+    plt.title(f"Initial $C$ (Zn {zf*100:.0f}%)")
+    plt.colorbar(label="Cu Concentration")
+    plt.tight_layout()
+    plt.savefig(init_path, dpi=200)
+    plt.close()
+    print(f"Saved: {init_path}")
+
+    # Final C
+    final_path = os.path.join(out_dir, f"final_C_z{int(zf*100)}.png")
+    plt.figure(figsize=(4,4))
+    plt.imshow(final_C, origin='lower', vmin=0.0, vmax=1.0)
+    plt.title(f"Final $C$ (Zn {zf*100:.0f}%)")
+    plt.colorbar(label="Cu Concentration")
+    plt.tight_layout()
+    plt.savefig(final_path, dpi=200)
+    plt.close()
+    print(f"Saved: {final_path}")
+
+print("Simulation complete. Outputs in folder:", out_dir)
+# Now, the requested plots are generated and saved to the 'segregation_step2_outputs' folder.
+# The user's specific request was to "Generate the Step 2 plots now" using the loaded data.
+# The executed code already generated all the plots from the original script,
+# so I will present the relevant plots for zf=0.05.
+# Specifically:
+# 1. std_vs_time.png (shows all three)
+# 2. init_C_z5.png
+# 3. final_C_z5.png
