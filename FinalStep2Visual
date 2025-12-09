@@ -1,0 +1,54 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# ================================
+# Load Step 2 Arrays
+# ================================
+# Make sure this filename matches your saved Step 2 output
+data = np.load("step2_results.npz")
+
+Cu_final = data["Cu_final"]     # Final Cu map after diffusion
+Zn_mask = data["Zn_mask"]       # Zn substitution pattern
+
+# Optional: Cu concentration evolution
+Cu_history = data["Cu_history"] if "Cu_history" in data else None
+
+# ================================
+# Plot Final Cu Map + Zn Mask
+# ================================
+plt.figure(figsize=(12,5))
+
+# ---- 1. Final Cu Concentration ----
+plt.subplot(1,2,1)
+plt.title("Final Cu Concentration After Diffusion (Step 2)")
+plt.imshow(Cu_final, cmap="viridis")
+plt.colorbar(label="Cu fraction")
+plt.axis("off")
+
+# ---- 2. Zn Mask ----
+plt.subplot(1,2,2)
+plt.title("Zn Mask (Reference Map)")
+plt.imshow(Zn_mask, cmap="gray_r")
+plt.colorbar(label="Zn present")
+plt.axis("off")
+
+plt.tight_layout()
+plt.show()
+
+# ================================
+# Optional — Show initial, middle, and final diffusion states
+# ================================
+if Cu_history is not None:
+    plt.figure(figsize=(15,4))
+    
+    steps = [0, len(Cu_history)//2, len(Cu_history)-1]
+    titles = ["Initial Cu", "Mid Simulation", "Final Cu"]
+
+    for i, (step_id, title) in enumerate(zip(steps, titles)):
+        plt.subplot(1,3,i+1)
+        plt.title(f"{title} (Step {step_id})")
+        plt.imshow(Cu_history[step_id], cmap="viridis")
+        plt.axis("off")
+
+    plt.tight_layout()
+    plt.show()
