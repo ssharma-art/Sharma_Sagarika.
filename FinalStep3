@@ -1,0 +1,85 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# -------------------------------
+# Step 3: Simulation + Visualization
+# -------------------------------
+
+np.random.seed(1)
+grid_size = 50
+steps = 120  # moderate number of steps for speed and clarity
+
+def simulate(Zn_fraction):
+    """
+    Simulate Cu diffusion on a 2D grid with Zn reducing local diffusion.
+    Returns:
+        - final Cu concentration map C
+        - Zn mask Z
+        - list of std(C) over time
+    """
+    # Initial Cu distribution
+    C = 0.5 + 0.1 * np.random.randn(grid_size, grid_size)
+
+    # Zn substitution mask (random)
+    Z = (np.random.rand(grid_size, grid_size) < Zn_fraction).astype(float)
+
+    # Base diffusion coefficient
+    D0 = 0.08
+    # Reduced diffusion where Zn is present
+    D = D0 * ((1 - Z) + 0.25 * Z)
+
+    stds = []
+
+    # Diffusion loop
+    for _ in range(steps):
+        lap = (
+            np.roll(C, 1, 0) + np.roll(C, -1, 0) +
+            np.roll(C, 1, 1) + np.roll(C, -1, 1) -
+            4 * C
+        )
+
+        C = C + 0.08 * D * lap
+        C = np.clip(C, 0, 1)  # keep values physically meaningful
+
+        stds.append(C.std())
+
+    return C, Z, stds
+
+
+# -------------------------------
+# Run Three Zn Cases
+# -------------------------------
+cases = {
+    "Zn 0%": simulate(0.0),
+    "Zn 5%": simulate(0.05),
+    "Zn 10%": simulate(0.10),
+}
+
+
+# -------------------------------
+# Visualization
+# -------------------------------
+fig, axes = plt.subplots(3, 2, figsize=(10, 14))
+
+for idx, (label, (C, Z, stds)) in enumerate(cases.items()):
+    ax_map = axes[idx, 0]
+    ax_std = axes[idx, 1]
+
+    # Cu concentration map
+    im = ax_map.imshow(C)
+    ax_map.set_title(f"Final Cu Map — {label}")
+    plt.colorbar(im, ax=ax_map)
+
+    # std(C) vs time curve
+    ax_std.plot(stds)
+    ax_std.set_title(f"Std(C) vs Time — {label}")
+    ax_std.set_xlabel("Time Step")
+    ax_std.set_ylabel("Std(C)")
+
+plt.tight_layout()
+
+# Save output PNG
+output_path = "step3_visualization.png"
+plt.savefig(output_path)
+
+print("Saved:", output_path)
