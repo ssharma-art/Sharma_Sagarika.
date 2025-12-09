@@ -1,0 +1,38 @@
+import numpy as np
+
+# ================================
+# Step 1 — Grid Initialization
+# ================================
+
+# Grid size
+N = 50  # 50×50 lattice
+
+# Zn fraction (example: 5% Zn substitution)
+zn_fraction = 0.05
+
+# -------------------------------
+# 1. Create initial Cu concentration grid
+# -------------------------------
+# Random fluctuations with values between 0.4 and 0.6
+Cu_init = 0.5 + 0.1 * (np.random.rand(N, N) - 0.5)
+
+# -------------------------------
+# 2. Create Zn substitution mask
+# -------------------------------
+# Zn = 1 at substituted sites, 0 otherwise
+Zn_mask = (np.random.rand(N, N) < zn_fraction).astype(int)
+
+# -------------------------------
+# 3. Save arrays to file
+# -------------------------------
+np.savez("step1_arrays.npz",
+         Cu_init=Cu_init,
+         Zn_mask=Zn_mask,
+         grid_size=N,
+         zn_fraction=zn_fraction)
+
+print("Step 1 complete!")
+print("Generated:")
+print(" - Cu_init array (initial Cu concentration)")
+print(" - Zn_mask array (Zn substitution pattern)")
+print("Saved to: step1_arrays.npz")
