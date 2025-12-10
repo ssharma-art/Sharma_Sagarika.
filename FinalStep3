@@ -1,85 +1,65 @@
 import numpy as np
-import matplotlib.pyplot as plt
 
-# -------------------------------
-# Step 3: Simulation + Visualization
-# -------------------------------
+# ============================================================
+# Step 3 – Compute Metrics for Cu Diffusion
+# ============================================================
 
-np.random.seed(1)
-grid_size = 50
-steps = 120  # moderate number of steps for speed and clarity
+# --- Load Step 2 output ---
+data = np.load("step2_results.npz")
+Cu_history = data["Cu_history"]
+Cu_final = data["Cu_final"]
+Zn_mask = data["Zn_mask"]
 
-def simulate(Zn_fraction):
-    """
-    Simulate Cu diffusion on a 2D grid with Zn reducing local diffusion.
-    Returns:
-        - final Cu concentration map C
-        - Zn mask Z
-        - list of std(C) over time
-    """
-    # Initial Cu distribution
-    C = 0.5 + 0.1 * np.random.randn(grid_size, grid_size)
+steps = Cu_history.shape[0]
+N = Cu_history.shape[1]
 
-    # Zn substitution mask (random)
-    Z = (np.random.rand(grid_size, grid_size) < Zn_fraction).astype(float)
+# ============================================================
+# Compute metrics
+# ============================================================
 
-    # Base diffusion coefficient
-    D0 = 0.08
-    # Reduced diffusion where Zn is present
-    D = D0 * ((1 - Z) + 0.25 * Z)
+# --- 1. Mean Cu concentration at each step ---
+mean_Cu = np.mean(Cu_history, axis=(1,2))
 
-    stds = []
+# --- 2. Standard deviation (measures homogeneity) ---
+std_Cu = np.std(Cu_history, axis=(1,2))
 
-    # Diffusion loop
-    for _ in range(steps):
-        lap = (
-            np.roll(C, 1, 0) + np.roll(C, -1, 0) +
-            np.roll(C, 1, 1) + np.roll(C, -1, 1) -
-            4 * C
-        )
+# --- 3. Cu change from start to end ---
+Cu_change = Cu_final - Cu_history[0]
 
-        C = C + 0.08 * D * lap
-        C = np.clip(C, 0, 1)  # keep values physically meaningful
+# --- 4. Per-site mobility reduction (based on Zn mask) ---
+Zn_fraction = np.mean(Zn_mask)
 
-        stds.append(C.std())
+# ============================================================
+# Print clear, readable results
+# ============================================================
+print("Step 3 complete!")
+print("--------------------------------------------------")
+print("Cu Diffusion Metrics (Step 3)")
+print("--------------------------------------------------")
+print(f"Grid size: {N} × {N}")
+print(f"Total simulation steps: {steps}")
+print(f"Zn site percentage: {Zn_fraction*100:.2f}%")
+print("--------------------------------------------------")
+print(f"Initial Cu mean: {mean_Cu[0]:.4f}")
+print(f"Final Cu mean:   {mean_Cu[-1]:.4f}")
+print(f"Initial std(Cu): {std_Cu[0]:.4f}")
+print(f"Final std(Cu):   {std_Cu[-1]:.4f}")
+print("--------------------------------------------------")
+print("Interpretation:")
+print("- Decreasing std(Cu) = Cu becomes more homogeneous.")
+print("- High Zn fraction = slower Cu diffusion.")
+print("--------------------------------------------------")
 
-    return C, Z, stds
+# ============================================================
+# Save metrics for later use
+# ============================================================
+np.savez(
+    "step3_metrics.npz",
+    mean_Cu=mean_Cu,
+    std_Cu=std_Cu,
+    Cu_change=Cu_change,
+    Zn_mask=Zn_mask,
+    steps=steps
+)
 
-
-# -------------------------------
-# Run Three Zn Cases
-# -------------------------------
-cases = {
-    "Zn 0%": simulate(0.0),
-    "Zn 5%": simulate(0.05),
-    "Zn 10%": simulate(0.10),
-}
-
-
-# -------------------------------
-# Visualization
-# -------------------------------
-fig, axes = plt.subplots(3, 2, figsize=(10, 14))
-
-for idx, (label, (C, Z, stds)) in enumerate(cases.items()):
-    ax_map = axes[idx, 0]
-    ax_std = axes[idx, 1]
-
-    # Cu concentration map
-    im = ax_map.imshow(C)
-    ax_map.set_title(f"Final Cu Map — {label}")
-    plt.colorbar(im, ax=ax_map)
-
-    # std(C) vs time curve
-    ax_std.plot(stds)
-    ax_std.set_title(f"Std(C) vs Time — {label}")
-    ax_std.set_xlabel("Time Step")
-    ax_std.set_ylabel("Std(C)")
-
-plt.tight_layout()
-
-# Save output PNG
-output_path = "step3_visualization.png"
-plt.savefig(output_path)
-
-print("Saved:", output_path)
+print("Saved metrics to step3_metrics.npz")
