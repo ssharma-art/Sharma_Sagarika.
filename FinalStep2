@@ -1,57 +1,97 @@
 import numpy as np
 
 # ============================================================
-# Step 2 – Diffusion Simulation of Cu with Zn-Dependent Mobility
+# Step 2 – Diffusion Simulation (Enhanced Output Info)
 # ============================================================
 
-# --- Load Step 1 data (Cu_init and Zn_mask) ---
+# --- Load Step 1 results ---
 data = np.load("step1_arrays.npz")
-Cu = data["Cu_init"].copy()      # Initial Cu concentration
-Zn_mask = data["Zn_mask"]        # 1 = Zn, 0 = no Zn
+Cu = data["Cu_init"].copy()
+Zn_mask = data["Zn_mask"]
 
-N = Cu.shape[0]                  # Grid size
-steps = 200                      # Number of diffusion steps
+N = Cu.shape[0]
 
-# Diffusion coefficients
-D0 = 0.1                         # Base diffusion coefficient
-D = np.where(Zn_mask == 1, D0 * 0.25, D0)   # Zn suppresses mobility
+# Simulation parameters
+steps = 200
+D0 = 0.1
+D = np.where(Zn_mask == 1, D0 * 0.25, D0)
 
-# To store history (optional)
+# Store history
 Cu_history = np.zeros((steps, N, N))
 Cu_history[0] = Cu.copy()
 
 # ============================================================
-# Define Laplacian operator
+# Laplacian operator
 # ============================================================
 def laplacian(arr):
-    """Compute 2D Laplacian using periodic boundary conditions."""
     return (
-        np.roll(arr, 1, axis=0) +
-        np.roll(arr, -1, axis=0) +
-        np.roll(arr, 1, axis=1) +
-        np.roll(arr, -1, axis=1) -
-        4 * arr
+        np.roll(arr, 1, axis=0)
+        + np.roll(arr, -1, axis=0)
+        + np.roll(arr, 1, axis=1)
+        + np.roll(arr, -1, axis=1)
+        - 4 * arr
     )
 
 # ============================================================
-# Diffusion time-stepping loop
+# Perform diffusion
 # ============================================================
 for t in range(1, steps):
     Cu = Cu + D * laplacian(Cu)
     Cu_history[t] = Cu.copy()
 
+Cu_final = Cu.copy()
+
 # ============================================================
-# Save results for Step 3
+# Save results
 # ============================================================
 np.savez(
     "step2_results.npz",
-    Cu_final=Cu,
+    Cu_final=Cu_final,
     Cu_history=Cu_history,
     Zn_mask=Zn_mask,
     steps=steps,
     grid_size=N
 )
 
-print("Step 2 complete!")
+# ============================================================
+# Print enhanced scientific summary
+# ============================================================
+print("\nStep 2 complete!")
 print("Diffusion simulation finished.")
+print("--------------------------------------------------")
+
+print("Grid:")
+print(f" - Size: {N} × {N}")
+print(f" - Steps simulated: {steps}")
+print()
+
+print("Zn mobility effects:")
+print(f" - Base diffusion coefficient (D0): {D0}")
+print(" - Zn sites have suppressed diffusion: D = 0.25 * D0")
+print(f" - Number of Zn sites: {Zn_mask.sum()}")
+print()
+
+print("Initial Cu statistics:")
+print(f" - Min:  {Cu_history[0].min():.5f}")
+print(f" - Max:  {Cu_history[0].max():.5f}")
+print(f" - Mean: {Cu_history[0].mean():.5f}")
+print(f" - Std:  {Cu_history[0].std():.5f}")
+print()
+
+print("Final Cu statistics:")
+print(f" - Min:  {Cu_final.min():.5f}")
+print(f" - Max:  {Cu_final.max():.5f}")
+print(f" - Mean: {Cu_final.mean():.5f}")
+print(f" - Std:  {Cu_final.std():.5f}")
+print()
+
+print("Segregation change (Std deviation):")
+sigma_initial = Cu_history[0].std()
+sigma_final = Cu_final.std()
+print(f" - Initial Std(Cu): {sigma_initial:.5f}")
+print(f" - Final Std(Cu):   {sigma_final:.5f}")
+print(f" - Reduction:       {sigma_initial - sigma_final:.5f}")
+print()
+
 print("Saved results to: step2_results.npz")
+print("--------------------------------------------------")
