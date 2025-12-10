@@ -1,0 +1,62 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# ============================================================
+# Load Step 3 metrics + Step 2 arrays
+# ============================================================
+metrics = np.load("step3_metrics.npz")
+mean_Cu = metrics["mean_Cu"]
+std_Cu = metrics["std_Cu"]
+
+step2 = np.load("step2_results.npz")
+Cu_history = step2["Cu_history"]
+
+# Optional maps
+Cu_initial = Cu_history[0]
+Cu_final = Cu_history[-1]
+
+steps = len(mean_Cu)
+
+# ============================================================
+# Plot 1 — Mean Cu concentration over time
+# ============================================================
+plt.figure(figsize=(10,4))
+plt.plot(mean_Cu)
+plt.title("Mean Cu Concentration Over Time (Step 3)")
+plt.xlabel("Time step")
+plt.ylabel("Mean Cu")
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+# ============================================================
+# Plot 2 — Standard deviation (homogeneity indicator)
+# ============================================================
+plt.figure(figsize=(10,4))
+plt.plot(std_Cu)
+plt.title("Standard Deviation of Cu Over Time (Step 3)")
+plt.xlabel("Time step")
+plt.ylabel("std(Cu)")
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+# ============================================================
+# Plot 3 — Initial vs Final Cu Maps
+# ============================================================
+plt.figure(figsize=(12,5))
+
+plt.subplot(1,2,1)
+plt.title("Initial Cu Distribution")
+plt.imshow(Cu_initial, cmap="viridis")
+plt.colorbar()
+plt.axis("off")
+
+plt.subplot(1,2,2)
+plt.title("Final Cu Distribution After Diffusion")
+plt.imshow(Cu_final, cmap="viridis")
+plt.colorbar()
+plt.axis("off")
+
+plt.tight_layout()
+plt.show()
