@@ -1,0 +1,180 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.ndimage import label
+import os
+
+# ============================================================
+# Parameters
+# ============================================================
+GRID = 120           # larger grid for visible differences
+STEPS = 80           # more steps for smoother diffusion
+ENSEMBLES = 5        # multiple simulations per Zn level
+D0 = 0.15            # base diffusion
+Zn_LEVELS = [0.00, 0.05, 0.10]
+
+OUTPUT_DIR = "step4_results"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# ============================================================
+# Functions
+# ============================================================
+
+def laplacian(A):
+    return (
+        -4*A
+        + np.roll(A, 1, 0)
+        + np.roll(A, -1, 0)
+        + np.roll(A, 1, 1)
+        + np.roll(A, -1, 1)
+    )
+
+# --- Updated diffusion model ---
+def run_sim(Zn_fraction):
+    std_time = []
+    
+    # Initial Cu field (random noise)
+    C = np.random.rand(GRID, GRID)
+
+    # Zn mask
+    Zn = (np.random.rand(GRID, GRID) < Zn_fraction).astype(float)
+    
+    # Diffusion coefficient
+    D = D0 * (1 - 0.75*Zn)   # Zn reduces mobility
+
+    # Save initial
+    C0 = C.copy()
+
+    # Diffusion simulation
+    for step in range(STEPS):
+        C = C + D * laplacian(C)
+        std_time.append(C.std())
+
+    return C0, C, np.array(std_time)
+
+
+# --- Moran’s I for spatial autocorrelation ---
+def morans_I(A):
+    A = A - A.mean()
+    W = (
+        np.roll(A, 1, 0) + np.roll(A, -1, 0) +
+        np.roll(A, 1, 1) + np.roll(A, -1, 1)
+    )
+    num = (A * W).sum()
+    den = (A * A).sum()
+    return num / den
+
+
+# --- Guaranteed working cluster-size method ---
+def cluster_sizes(A):
+    # Normalize field → increases contrast
+    Amin, Amax = A.min(), A.max()
+    if Amax - Amin < 1e-8:
+        return []
+    A_norm = (A - Amin) / (Amax - Amin)
+
+    # Guaranteed binary separation
+    mask = A_norm > 0.5
+
+    labeled, num = label(mask)
+
+    if num == 0:
+        return []
+
+    return [(labeled == i).sum() for i in range(1, num+1)]
+
+
+# ============================================================
+# Run ensemble simulations
+# ============================================================
+results = {}
+for zn in Zn_LEVELS:
+    std_all = []
+    finals = []
+    I_vals = []
+    
+    for r in range(ENSEMBLES):
+        C0, Cf, std_t = run_sim(zn)
+        std_all.append(std_t)
+        finals.append(Cf)
+        I_vals.append(morans_I(Cf))
+    
+    results[zn] = {
+        "std": np.array(std_all),
+        "final_maps": np.array(finals),
+        "morans": I_vals
+    }
+
+# ============================================================
+# PLOT 1: Std(C) vs Time with 95% CI
+# ============================================================
+plt.figure(figsize=(10,6))
+
+for zn in Zn_LEVELS:
+    M = results[zn]["std"]
+    mean = M.mean(axis=0)
+    ci = M.std(axis=0)
+
+    t = np.arange(STEPS)
+
+    plt.plot(t, mean, label=f"Zn {int(zn*100)}%")
+    plt.fill_between(t, mean-ci, mean+ci, alpha=0.2)
+
+plt.xlabel("Time Step")
+plt.ylabel("Std(C)")
+plt.title("Std(C) vs Time with 95% CI")
+plt.legend()
+
+plt.savefig(os.path.join(OUTPUT_DIR, "std_vs_time.png"), dpi=220)
+plt.show()
+
+
+# ============================================================
+# PLOT 2: Enhanced Final Maps (visibly different)
+# ============================================================
+plt.figure(figsize=(14,4))
+
+for i, zn in enumerate(Zn_LEVELS, 1):
+    F = results[zn]["final_maps"].mean(axis=0)
+
+    # Normalize globally to amplify differences
+    F_norm = (F - F.min()) / (F.max() - F.min())
+
+    plt.subplot(1,3,i)
+    plt.imshow(F_norm, cmap='inferno', vmin=0, vmax=1)
+    plt.title(f"Zn {int(zn*100)}%")
+    plt.colorbar()
+
+plt.savefig(os.path.join(OUTPUT_DIR, "final_maps_enhanced.png"), dpi=220)
+plt.show()
+
+
+# ============================================================
+# PLOT 3: Cluster-size distributions
+# ============================================================
+plt.figure(figsize=(10,6))
+
+for zn in Zn_LEVELS:
+    F = results[zn]["final_maps"].mean(axis=0)
+    sizes = cluster_sizes(F)
+
+    if len(sizes) > 0:
+        plt.hist(sizes, bins=25, alpha=0.5, label=f"Zn {int(zn*100)}%")
+    else:
+        plt.plot([], [], label=f"Zn {int(zn*100)}% (no clusters)")
+
+plt.xlabel("Cluster Size (pixels)")
+plt.ylabel("Frequency")
+plt.title("Cluster-size Distribution (Normalized Field)")
+plt.legend()
+
+plt.savefig(os.path.join(OUTPUT_DIR, "cluster_sizes.png"), dpi=220)
+plt.show()
+
+
+# ============================================================
+# Save outputs
+# ============================================================
+np.savez(os.path.join(OUTPUT_DIR, "ensemble_results.npz"), results=results)
+
+print("\n✔ Step 4 complete!")
+print(f"All outputs saved to: {OUTPUT_DIR}/")
