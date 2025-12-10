@@ -1,29 +1,27 @@
 import numpy as np
 
-# ================================
-# Step 1 — Grid Initialization
-# ================================
+# ============================================================
+# Step 1 — Grid Initialization (Enhanced Info Output)
+# ============================================================
 
 # Grid size
-N = 50  # 50×50 lattice
+N = 50  # 50×50 grid
 
-# Zn fraction (example: 5% Zn substitution)
-zn_fraction = 0.05
+# Zn fraction
+zn_fraction = 0.05  # 5% Zn
 
 # -------------------------------
 # 1. Create initial Cu concentration grid
 # -------------------------------
-# Random fluctuations with values between 0.4 and 0.6
-Cu_init = 0.5 + 0.1 * (np.random.rand(N, N) - 0.5)
+Cu_init = 0.5 + 0.1 * (np.random.rand(N, N) - 0.5)  # ~0.45–0.55 range
 
 # -------------------------------
-# 2. Create Zn substitution mask
+# 2. Create Zn mask
 # -------------------------------
-# Zn = 1 at substituted sites, 0 otherwise
 Zn_mask = (np.random.rand(N, N) < zn_fraction).astype(int)
 
 # -------------------------------
-# 3. Save arrays to file
+# 3. Save arrays
 # -------------------------------
 np.savez("step1_arrays.npz",
          Cu_init=Cu_init,
@@ -31,8 +29,33 @@ np.savez("step1_arrays.npz",
          grid_size=N,
          zn_fraction=zn_fraction)
 
-print("Step 1 complete!")
-print("Generated:")
-print(" - Cu_init array (initial Cu concentration)")
-print(" - Zn_mask array (Zn substitution pattern)")
+# -------------------------------
+# 4. Enhanced clarity printout
+# -------------------------------
+print("\nStep 1 complete!")
+print("Generated arrays for simulation:")
+print("-----------------------------------")
+print("Cu_init array (initial Cu concentration):")
+print(f" - Shape: {Cu_init.shape}")
+print(f" - Min Cu value: {Cu_init.min():.4f}")
+print(f" - Max Cu value: {Cu_init.max():.4f}")
+print(f" - Mean Cu value: {Cu_init.mean():.4f}")
+print(f" - Std dev Cu value: {Cu_init.std():.4f}")
+print(" - Expected range: approx. 0.45–0.55")
+print()
+
+print("Zn_mask array (Zn substitution pattern):")
+num_zn = Zn_mask.sum()
+total_cells = N * N
+actual_fraction = num_zn / total_cells
+
+print(f" - Shape: {Zn_mask.shape}")
+print(f" - Zn sites count: {num_zn}")
+print(f" - Zn fraction (actual): {actual_fraction:.4f}")
+print(f" - Zn fraction (target): {zn_fraction:.4f}")
+print(" - Values: 1 = Zn site, 0 = non-Zn site")
+print()
+
 print("Saved to: step1_arrays.npz")
+print("-----------------------------------")
+
