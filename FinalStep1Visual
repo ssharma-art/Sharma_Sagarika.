@@ -1,28 +1,31 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# ================================
-# Load Step 1 Arrays
-# ================================
+# ============================================================
+# Visualization of Step 1 — Cu_init and Zn_mask
+# ============================================================
+
+# Load Step 1 arrays
 data = np.load("step1_arrays.npz")
 Cu_init = data["Cu_init"]
 Zn_mask = data["Zn_mask"]
+N = data["grid_size"]
 
-# ================================
-# Create Visualization
-# ================================
+# ------------------------------------------------------------
+# Create visualization figure
+# ------------------------------------------------------------
 plt.figure(figsize=(12,5))
 
-# ---- 1. Cu Initial Concentration ----
+# --- 1. Initial Cu concentration map ---
 plt.subplot(1,2,1)
 plt.title("Initial Cu Concentration (Step 1)")
 plt.imshow(Cu_init, cmap="viridis")
 plt.colorbar(label="Cu fraction")
 plt.axis("off")
 
-# ---- 2. Zn Substitution Mask ----
+# --- 2. Zn substitution mask ---
 plt.subplot(1,2,2)
-plt.title("Zn Mask (1 = Zn, 0 = Cu Site)")
+plt.title("Zn Mask (1 = Zn site, 0 = Cu site)")
 plt.imshow(Zn_mask, cmap="gray_r")
 plt.colorbar(label="Zn presence")
 plt.axis("off")
